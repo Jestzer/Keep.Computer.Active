@@ -23,20 +23,21 @@ static extern bool EnumProcessModulesEx(IntPtr hProcess, [Out] IntPtr[] lphModul
 [DllImport("psapi.dll")]
 static extern uint GetModuleBaseName(IntPtr hProcess, IntPtr hModule, StringBuilder lpBaseName, int nSize);
 
-static int GetProcessIdByName(string processName)
+static int GetProcessIdByName(string processName, string windowTitleContains)
 {
     // Get all processes with the specified name.
     Process[] processes = Process.GetProcessesByName(processName);
-    if (processes.Length > 0)
+    foreach (var proc in processes)
     {
-        // Return the PID of the first process found.
-        return processes[0].Id;
+        // Check if the process has a main window title containing the specified string.
+        // Just calling for "Teams.exe" isn't enough because there are multiple processes running with "Teams.exe".
+        if (proc.MainWindowTitle.Contains(windowTitleContains))
+        {
+            return proc.Id;
+        }
     }
-    else
-    {
-        // No process found with the specified name.
-        return -1;
-    }
+    // No process found with the specified name and window title criteria.
+    return -1;
 }
 
 static IntPtr GetModuleBaseAddress(int processID, string moduleName)
@@ -64,20 +65,17 @@ static IntPtr GetModuleBaseAddress(int processID, string moduleName)
 }
 
 void ChangeStateToActive()
-
 {
     try
     {
-        string processName = "Teams";
         string dllName = "Teams.exe";
-        int processID = GetProcessIdByName(processName);
-        int offset = 0x89C7608;
+        int processID = GetProcessIdByName("Teams", " | Microsoft Teams");
+        int offset = 0x89FAE85;
         if (processID == -1)
         {
             Console.WriteLine("Teams is not running.");
             return;
         }
-
 
         const int PROCESS_WM_READ = 0x0010;
         const int PROCESS_WM_WRITE = 0x0020;
@@ -111,8 +109,7 @@ void ChangeStateToActive()
         }
         else
         {
-            Console.WriteLine("Status: Checkpoint unsuccessfully forced.");
-            Console.WriteLine("Checkpoint unsuccessfully forced (Failed to write to process memory.)");
+            Console.WriteLine("Unable to change the offset value to 1. Do some debugging.");
             return;
         }
     }
