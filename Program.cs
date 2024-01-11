@@ -68,9 +68,9 @@ void ChangeStateToActive()
 {
     try
     {
-        string dllName = "Teams.exe";
+        string dllName = "textinputframework.dll";
         int processID = GetProcessIdByName("Teams", " | Microsoft Teams");
-        int offset = 0x89FAE85;
+        int offset = 0x13489D;
         if (processID == -1)
         {
             Console.WriteLine("Teams is not running.");
