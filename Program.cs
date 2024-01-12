@@ -214,6 +214,8 @@ void CheckTeamsVersion(out string acceptedVersion, out string versionNumber)
         else
         {
             // Try another version.
+            offset = 0x89AFCE9;
+            addressToRead = IntPtr.Add(dllBaseAddress, offset);
             stringLength = "1.6.00.29964".Length;
             buffer = new byte[stringLength];
             result = ReadProcessMemory(processHandle, addressToRead, buffer, buffer.Length, out bytesRead);
