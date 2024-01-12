@@ -1,15 +1,47 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel.Design;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
 Console.WriteLine("Releasing the chickens...");
-string userMessage = string.Empty;
-CheckTeamsVersion(out bool acceptedVersion);
 
-while (acceptedVersion == true)
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 {
-    ChangeStateToActive();
-    await Task.Delay(2000);
+    Console.WriteLine("Running on Windows.");
+}
+else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+{
+    Console.WriteLine("Running on Linux.");
+}
+else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+{
+    Console.WriteLine("Running on macOS.");
+}
+else
+{
+    Console.WriteLine("Running on an unknown platform");
+}
+
+string userMessage = string.Empty;
+int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
+while (true)
+{
+    CheckIfTeamsIsRunning(out bool isTeamsRunning);
+    if (isTeamsRunning)
+    {
+        CheckTeamsVersion(out string acceptedVersion);
+
+        if (acceptedVersion == "unsupported")
+        {
+            break;
+        }
+
+        while (acceptedVersion == "supported" && isTeamsRunning == true)
+        {
+            ChangeStateToActive();
+            await Task.Delay(2000);
+        }
+    }
 }
 
 [DllImport("kernel32.dll")]
@@ -73,19 +105,11 @@ void ChangeStateToActive()
     try
     {
         string dllName = "textinputframework.dll";
-        int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
         int offset = 0x13489D;
-        if (processID == -1)
+
+        CheckIfTeamsIsRunning(out bool isTeamsRunning);
+        if (!isTeamsRunning)
         {
-            if (userMessage == "Teams Classic is not running.")
-            {
-                // Don't repeat the same error message.
-            }
-            else
-            {
-                userMessage = "Teams Classic is not running.";
-                Console.WriteLine(userMessage);
-            }
             return;
         }
 
@@ -125,7 +149,7 @@ void ChangeStateToActive()
             {
                 userMessage = "Currently disabling automatic inactivity!";
                 Console.WriteLine(userMessage);
-            }            
+            }
         }
         else
         {
@@ -139,27 +163,14 @@ void ChangeStateToActive()
     }
 }
 
-void CheckTeamsVersion(out bool acceptedVersion)
+void CheckTeamsVersion(out string acceptedVersion)
 {
-    acceptedVersion = true;
+    acceptedVersion = "undetermined";
+
     try
     {
         string dllName = "Teams.exe";
-        int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
         int offset = 0x89AECE9;
-        if (processID == -1)
-        {
-            if (userMessage == "Teams Classic is not running.")
-            {
-                // Don't repeat the same error message.
-            }
-            else
-            {
-                userMessage = "Teams Classic is not running.";
-                Console.WriteLine(userMessage);
-            }
-            return;
-        }
 
         const int PROCESS_WM_READ = 0x0010;
 
@@ -192,10 +203,11 @@ void CheckTeamsVersion(out bool acceptedVersion)
         if (result && bytesRead == buffer.Length && readString == "1.6.00.35961")
         {
             // Matching Teams version found!
+            acceptedVersion = "supported";
         }
         else
         {
-            acceptedVersion = false;
+            acceptedVersion = "unsupported";
             Console.WriteLine("Your version of Teams is unsupported. Sorry!");
             return;
         }
@@ -203,5 +215,29 @@ void CheckTeamsVersion(out bool acceptedVersion)
     catch (Exception ex)
     {
         Console.WriteLine("You got an error :( " + ex.Message);
+    }
+}
+
+void CheckIfTeamsIsRunning(out bool isTeamsRunning)
+{
+    // processID may seem redundant here, but it's needs to be updated if the program just opened/restarted.
+    processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
+    if (processID == -1)
+    {
+        isTeamsRunning = false;
+        if (userMessage == "Teams Classic is not running.")
+        {
+            // Don't repeat the same error message.            
+        }
+        else
+        {
+            userMessage = "Teams Classic is not running.";
+            Console.WriteLine(userMessage);
+        }
+        return;
+    }
+    else
+    {
+        isTeamsRunning = true;
     }
 }
