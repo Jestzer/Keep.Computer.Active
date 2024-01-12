@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.Design;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -23,13 +22,14 @@ else
 }
 
 string userMessage = string.Empty;
+string versionNumber = string.Empty;
 int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
 while (true)
 {
     CheckIfTeamsIsRunning(out bool isTeamsRunning);
     if (isTeamsRunning)
     {
-        CheckTeamsVersion(out string acceptedVersion);
+        CheckTeamsVersion(out string acceptedVersion, out versionNumber);
 
         if (acceptedVersion == "unsupported")
         {
@@ -58,6 +58,10 @@ static extern bool EnumProcessModulesEx(IntPtr hProcess, [Out] IntPtr[] lphModul
 
 [DllImport("psapi.dll")]
 static extern uint GetModuleBaseName(IntPtr hProcess, IntPtr hModule, StringBuilder lpBaseName, int nSize);
+
+const int PROCESS_WM_READ = 0x0010;
+const int PROCESS_WM_WRITE = 0x0020;
+const int PROCESS_VM_OPERATION = 0x0008;
 
 static int GetProcessIdByName(string processName, string windowTitleContains)
 {
@@ -107,15 +111,17 @@ void ChangeStateToActive()
         string dllName = "textinputframework.dll";
         int offset = 0x13489D;
 
+        if (versionNumber == "1.6.00.29964")
+        {
+            dllName = "combase.dll";
+            offset = 0x335B29;
+        }
+
         CheckIfTeamsIsRunning(out bool isTeamsRunning);
         if (!isTeamsRunning)
         {
             return;
         }
-
-        const int PROCESS_WM_READ = 0x0010;
-        const int PROCESS_WM_WRITE = 0x0020;
-        const int PROCESS_VM_OPERATION = 0x0008;
 
         IntPtr processHandle = OpenProcess(PROCESS_WM_READ | PROCESS_WM_WRITE | PROCESS_VM_OPERATION, false, processID);
 
@@ -163,16 +169,15 @@ void ChangeStateToActive()
     }
 }
 
-void CheckTeamsVersion(out string acceptedVersion)
+void CheckTeamsVersion(out string acceptedVersion, out string versionNumber)
 {
+    versionNumber = string.Empty;
     acceptedVersion = "undetermined";
 
     try
     {
         string dllName = "Teams.exe";
         int offset = 0x89AECE9;
-
-        const int PROCESS_WM_READ = 0x0010;
 
         IntPtr processHandle = OpenProcess(PROCESS_WM_READ, false, processID);
 
@@ -204,12 +209,28 @@ void CheckTeamsVersion(out string acceptedVersion)
         {
             // Matching Teams version found!
             acceptedVersion = "supported";
+            versionNumber = "1.6.00.35961";
         }
         else
         {
-            acceptedVersion = "unsupported";
-            Console.WriteLine("Your version of Teams is unsupported. Sorry!");
-            return;
+            // Try another version.
+            stringLength = "1.6.00.29964".Length;
+            buffer = new byte[stringLength];
+            result = ReadProcessMemory(processHandle, addressToRead, buffer, buffer.Length, out bytesRead);
+            readString = Encoding.ASCII.GetString(buffer);
+
+            if (result && bytesRead == buffer.Length && readString == "1.6.00.29964")
+            {
+                // Matching Teams version found!
+                acceptedVersion = "supported";
+                versionNumber = "1.6.00.29964";
+            }
+            else
+            {
+                acceptedVersion = "unsupported";
+                Console.WriteLine("Your version of Teams is unsupported. Sorry!");
+                return;
+            }
         }
     }
     catch (Exception ex)
