@@ -27,6 +27,7 @@ else
 string userMessage = string.Empty;
 string versionNumber = string.Empty;
 int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
+bool isUsingNewTeams = false;
 while (true)
 {
     CheckIfTeamsIsRunning(out bool isTeamsRunning);
@@ -114,23 +115,14 @@ void ChangeStateToActive()
         string dllName = string.Empty;
         int offset = 0;
 
-        if (versionNumber == "1.7.00.156") // Currently doesn't work. Need to find a different dll/offset.
+        (dllName, offset) = versionNumber switch
         {
-            dllName = "textinputframework.dll";
-            offset = 0x13473B;
-        }
-
-        if (versionNumber == "1.6.00.35961")
-        {
-            dllName = "textinputframework.dll";
-            offset = 0x13489D;
-        }
-
-        if (versionNumber == "1.6.00.29964")
-        {
-            dllName = "combase.dll";
-            offset = 0x335B29;
-        }
+            "1.7.00.156" => ("combase.dll", 0x335B29),
+            "1.6.00.35961" => ("textinputframework.dll", 0x13489D), // My guess is the combase one works for this version too...
+            "1.6.00.29964" => ("combase.dll", 0x335B29),
+            "23320.3027.2591.1505" => ("RPCRT4.dll", 0x1021C4), // Try 0x1021D8 if that doesn't work.
+            _ => (string.Empty, 0)
+        };
 
         CheckIfTeamsIsRunning(out bool isTeamsRunning);
         if (!isTeamsRunning)
@@ -145,7 +137,12 @@ void ChangeStateToActive()
 
         if (dllBaseAddress == IntPtr.Zero)
         {
-            Console.WriteLine($"Failed to find the base address of {dllName}.");
+            if (userMessage != $"Failed to find the base address of {dllName}.")
+            {
+                userMessage = $"Failed to find the base address of {dllName}.";
+                Console.WriteLine();
+            }
+            // Don't repeat the error message.
             return;
         }
 
@@ -162,13 +159,13 @@ void ChangeStateToActive()
 
         if (result && bytesWritten == buffer.Length)
         {
-            if (userMessage == "Currently disabling automatic inactivity!")
+            if (userMessage == "Successfully disabling automatic inactivity!")
             {
                 // Don't repeat the message.
             }
             else
             {
-                userMessage = "Currently disabling automatic inactivity!";
+                userMessage = "Successfully disabling automatic inactivity!";
                 Console.WriteLine(userMessage);
             }
         }
@@ -191,7 +188,16 @@ void CheckTeamsVersion(out string acceptedVersion, out string versionNumber)
 
     try
     {
-        string dllName = "Teams.exe";
+        string dllName = string.Empty;
+        if (isUsingNewTeams)
+        {
+            dllName = "EmbeddedBrowserWebView.dll";
+        }
+        else
+        {
+            dllName = "Teams.exe";
+        }
+
         IntPtr processHandle = OpenProcess(PROCESS_WM_READ, false, processID);
 
         // Get the base address of the DLL in the process's memory space.
@@ -199,16 +205,21 @@ void CheckTeamsVersion(out string acceptedVersion, out string versionNumber)
 
         if (dllBaseAddress == IntPtr.Zero)
         {
-            Console.WriteLine($"Failed to find the base address of {dllName}.");
+            if (userMessage != $"Failed to find the base address of {dllName}.")
+            {
+                userMessage = $"Failed to find the base address of {dllName}.";
+                Console.WriteLine(userMessage);
+            }
             return;
         }
 
         // Check through the different supported versions of Teams.
-        string[] versions = ["1.6.00.35961", "1.6.00.29964", "1.7.00.156"];
-        int[] offsets = [0x89AECE9, 0x89AFCE9, 0x89B0CE9];
+        string[] versions = ["1.6.00.35961", "1.6.00.29964", "1.7.00.156", "23320.3027.2591.1505"];
+        int[] offsets = [0x89AECE9, 0x89AFCE9, 0x89B0CE9, 0x6813C5];
 
         for (int i = 0; i < versions.Length; i++)
         {
+
             int stringLength = versions[i].Length;
             IntPtr addressToRead = IntPtr.Add(dllBaseAddress, offsets[i]);
 
@@ -247,17 +258,27 @@ void CheckIfTeamsIsRunning(out bool isTeamsRunning)
     processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
     if (processID == -1)
     {
-        isTeamsRunning = false;
-        if (userMessage == "Teams Classic is not running.")
+        // "New" Teams executable.
+        processID = GetProcessIdByName("ms-teams", " | Microsoft Teams");
+        if (processID == -1)
         {
-            // Don't repeat the same error message.            
+            isTeamsRunning = false;
+            if (userMessage == "Teams is not running.")
+            {
+                // Don't repeat the same error message.            
+            }
+            else
+            {
+                userMessage = "Teams is not running.";
+                Console.WriteLine(userMessage);
+            }
+            return;
         }
         else
         {
-            userMessage = "Teams Classic is not running.";
-            Console.WriteLine(userMessage);
+            isUsingNewTeams = true;
+            isTeamsRunning = true;
         }
-        return;
     }
     else
     {
