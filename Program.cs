@@ -6,19 +6,22 @@ Console.WriteLine("Releasing the chickens...");
 
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 {
-    Console.WriteLine("Running on Windows.");
+    // Proceed.
 }
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 {
-    Console.WriteLine("Running on Linux.");
+    Console.WriteLine("This application does not support Linux because there is no longer an official Teams application for Linux.");
+    Environment.Exit(1);
 }
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 {
-    Console.WriteLine("Running on macOS.");
+    Console.WriteLine("This application does not support macOS because Apple would make my life and yours hell to make this run on macOS.");
+    Environment.Exit(1);
 }
 else
 {
-    Console.WriteLine("Running on an unknown platform");
+    Console.WriteLine("Running on an unknown platform. Exiting.");
+    Environment.Exit(1);
 }
 
 string userMessage = string.Empty;
@@ -108,8 +111,20 @@ void ChangeStateToActive()
 {
     try
     {
-        string dllName = "textinputframework.dll";
-        int offset = 0x13489D;
+        string dllName = string.Empty;
+        int offset = 0;
+
+        if (versionNumber == "1.7.00.156") // Currently doesn't work. Need to find a different dll/offset.
+        {
+            dllName = "textinputframework.dll";
+            offset = 0x13473B;
+        }
+
+        if (versionNumber == "1.6.00.35961")
+        {
+            dllName = "textinputframework.dll";
+            offset = 0x13489D;
+        }
 
         if (versionNumber == "1.6.00.29964")
         {
@@ -177,8 +192,6 @@ void CheckTeamsVersion(out string acceptedVersion, out string versionNumber)
     try
     {
         string dllName = "Teams.exe";
-        int offset = 0x89AECE9;
-
         IntPtr processHandle = OpenProcess(PROCESS_WM_READ, false, processID);
 
         // Get the base address of the DLL in the process's memory space.
@@ -190,50 +203,37 @@ void CheckTeamsVersion(out string acceptedVersion, out string versionNumber)
             return;
         }
 
-        // Calculate the address to read by adding the offset to the base address.
-        IntPtr addressToRead = IntPtr.Add(dllBaseAddress, offset);
+        // Check through the different supported versions of Teams.
+        string[] versions = ["1.6.00.35961", "1.6.00.29964", "1.7.00.156"];
+        int[] offsets = [0x89AECE9, 0x89AFCE9, 0x89B0CE9];
 
-        int stringLength = "1.6.00.35961".Length;
-
-        // Allocate a buffer to store the value to read.
-        byte[] buffer = new byte[stringLength];
-
-        // Read the value to the calculated address. Let us know what the result was.
-        bool result = ReadProcessMemory(processHandle, addressToRead, buffer, buffer.Length, out int bytesRead);
-
-        // Convert the byte array to a string using the ASCII encoding.
-        string readString = Encoding.ASCII.GetString(buffer);
-
-        // Check if the read string matches the expected value.
-        if (result && bytesRead == buffer.Length && readString == "1.6.00.35961")
+        for (int i = 0; i < versions.Length; i++)
         {
-            // Matching Teams version found!
-            acceptedVersion = "supported";
-            versionNumber = "1.6.00.35961";
-        }
-        else
-        {
-            // Try another version.
-            offset = 0x89AFCE9;
-            addressToRead = IntPtr.Add(dllBaseAddress, offset);
-            stringLength = "1.6.00.29964".Length;
-            buffer = new byte[stringLength];
-            result = ReadProcessMemory(processHandle, addressToRead, buffer, buffer.Length, out bytesRead);
-            readString = Encoding.ASCII.GetString(buffer);
+            int stringLength = versions[i].Length;
+            IntPtr addressToRead = IntPtr.Add(dllBaseAddress, offsets[i]);
 
-            if (result && bytesRead == buffer.Length && readString == "1.6.00.29964")
+            // Allocate a buffer to store the value to read.
+            byte[] buffer = new byte[stringLength];
+
+            // Read the value to the calculated address. Let us know what the result was.
+            bool result = ReadProcessMemory(processHandle, addressToRead, buffer, buffer.Length, out int bytesRead);
+
+            // Convert the byte array to a string using the ASCII encoding.
+            string readString = Encoding.ASCII.GetString(buffer);
+
+            // Check if the read string matches the expected value.
+            if (result && bytesRead == buffer.Length && readString.Equals(versions[i]))
             {
                 // Matching Teams version found!
                 acceptedVersion = "supported";
-                versionNumber = "1.6.00.29964";
-            }
-            else
-            {
-                acceptedVersion = "unsupported";
-                Console.WriteLine("Your version of Teams is unsupported. Sorry!");
+                versionNumber = versions[i];
                 return;
             }
         }
+
+        // If we reach this point, no supported version was found.
+        acceptedVersion = "unsupported";
+        Console.WriteLine("Your version of Teams is unsupported. Sorry!");
     }
     catch (Exception ex)
     {
