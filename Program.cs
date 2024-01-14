@@ -28,6 +28,10 @@ string userMessage = string.Empty;
 string versionNumber = string.Empty;
 int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
 bool isUsingNewTeams = false;
+
+const uint ES_CONTINUOUS = 0x80000000;
+const uint ES_SYSTEM_REQUIRED = 0x00000001;
+
 while (true)
 {
     CheckIfTeamsIsRunning(out bool isTeamsRunning);
@@ -47,6 +51,7 @@ while (true)
         }
     }
 }
+SetThreadExecutionState(ES_CONTINUOUS);
 
 [DllImport("kernel32.dll")]
 static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
@@ -62,6 +67,9 @@ static extern bool EnumProcessModulesEx(IntPtr hProcess, [Out] IntPtr[] lphModul
 
 [DllImport("psapi.dll")]
 static extern uint GetModuleBaseName(IntPtr hProcess, IntPtr hModule, StringBuilder lpBaseName, int nSize);
+
+[DllImport("kernel32.dll")]
+static extern uint SetThreadExecutionState(uint esFlags);
 
 const int PROCESS_WM_READ = 0x0010;
 const int PROCESS_WM_WRITE = 0x0020;
@@ -168,6 +176,8 @@ void ChangeStateToActive()
                 userMessage = "Successfully disabling automatic inactivity!";
                 Console.WriteLine(userMessage);
             }
+
+            SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
         }
         else
         {
