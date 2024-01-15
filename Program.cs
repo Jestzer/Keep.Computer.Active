@@ -38,6 +38,7 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             }
         }
     }
+    // This is a shitty and completely ineffective place to put this and needs to be changed.
     SetThreadExecutionState(ES_CONTINUOUS);
 }
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -56,6 +57,7 @@ else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         }
     }
 
+    // Yes I know this unreachable at the moment THANK YOU.
     Marshal.FreeHGlobal(assertionType);
     Marshal.FreeHGlobal(assertionName);
 }
@@ -346,7 +348,7 @@ void PreventSleepMacOS()
             Console.WriteLine("Failed to prevent sleep. Error code: " + result);
         }
     }
-    catch (ex Exception)
+    catch (Exception ex)
     {
         Console.WriteLine(ex.Message);
     }
@@ -364,9 +366,9 @@ void CheckIfTeamsRunningMacOS(out bool isTeamsRunning)
         CreateNoWindow = true
     };
 
-    using (Process process = Process.Start(startInfo))
+    using (Process process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start process"))
     {
-        using (StreamReader reader = process.StandardOutput)
+        using (StreamReader reader = process.StandardOutput ?? throw new InvalidOperationException("StandardOutput is null"))
         {
             string result = reader.ReadToEnd();
 
