@@ -15,8 +15,9 @@ else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 }
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 {
-    Console.WriteLine("This application does not support macOS because Apple would make my life and yours hell to make this run on macOS.");
-    Environment.Exit(1);
+    Console.WriteLine("macOS.");
+    //Environment.Exit(1);
+    PreventSleepMacOS();
 }
 else
 {
@@ -29,6 +30,11 @@ string versionNumber = string.Empty;
 int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
 bool isUsingNewTeams = false;
 
+// macOS stuff.
+IntPtr assertionType;
+IntPtr assertionName;
+
+// Needed to keep the computer from going to sleep.
 const uint ES_CONTINUOUS = 0x80000000;
 const uint ES_SYSTEM_REQUIRED = 0x00000001;
 
@@ -52,6 +58,12 @@ while (true)
     }
 }
 SetThreadExecutionState(ES_CONTINUOUS);
+
+if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+{
+    Marshal.FreeHGlobal(assertionType);
+    Marshal.FreeHGlobal(assertionName);
+}
 
 [DllImport("kernel32.dll")]
 static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
@@ -177,7 +189,8 @@ void ChangeStateToActive()
                 Console.WriteLine(userMessage);
             }
 
-            SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+            // Time to actually enable no-sleep mode.
+            _ = SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
         }
         else
         {
@@ -293,5 +306,41 @@ void CheckIfTeamsIsRunning(out bool isTeamsRunning)
     else
     {
         isTeamsRunning = true;
+    }
+}
+
+void PreventSleepMacOS()
+{
+    // Define the necessary I/O Kit constants and structs
+    const string IOPMAssertionTypeNoIdleSleep = "NoIdleSleepAssertion";
+    const uint kIOPMAssertionLevelOn = 255;
+
+    // Define the IOPMAssertionCreateWithName function signature
+    [DllImport("/System/Library/Frameworks/IOKit.framework/IOKit")]
+    static extern int IOPMAssertionCreateWithName(
+        IntPtr assertionType,
+        uint assertionLevel,
+        IntPtr assertionName,
+        out uint assertionID);
+
+    uint assertionID;
+    IntPtr assertionType = Marshal.StringToHGlobalAnsi(IOPMAssertionTypeNoIdleSleep);
+    IntPtr assertionName = Marshal.StringToHGlobalAnsi("MyApp Prevent Sleep");
+
+    // Create the power assertion to prevent idle sleep
+    int result = IOPMAssertionCreateWithName(
+        assertionType,
+        kIOPMAssertionLevelOn,
+        assertionName,
+        out assertionID);
+
+    if (result == 0)
+    {
+        Console.WriteLine("Sleep prevention activated. Assertion ID: " + assertionID);
+        // Keep the application running or perform work here
+    }
+    else
+    {
+        Console.WriteLine("Failed to prevent sleep. Error code: " + result);
     }
 }
