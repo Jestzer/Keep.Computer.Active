@@ -17,7 +17,7 @@ else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 {
     Console.WriteLine("macOS.");
     //Environment.Exit(1);
-    PreventSleepMacOS();
+
 }
 else
 {
@@ -43,17 +43,27 @@ while (true)
     CheckIfTeamsIsRunning(out bool isTeamsRunning);
     if (isTeamsRunning)
     {
-        CheckTeamsVersion(out string acceptedVersion, out versionNumber);
-
-        if (acceptedVersion == "unsupported")
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            break;
+            CheckTeamsVersion(out string acceptedVersion, out versionNumber);
+
+            if (acceptedVersion == "unsupported")
+            {
+                break;
+            }
+
+            while (acceptedVersion == "supported" && isTeamsRunning == true)
+            {
+                ChangeStateToActive();
+                await Task.Delay(2000);
+            }
         }
-
-        while (acceptedVersion == "supported" && isTeamsRunning == true)
+        else
         {
-            ChangeStateToActive();
-            await Task.Delay(2000);
+            while (true)
+            {
+                PreventSleepMacOS();
+            }
         }
     }
 }
