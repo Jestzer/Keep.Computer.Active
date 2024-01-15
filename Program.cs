@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
+// For macOS.
 Process? caffeinateProcess = null;
 
 // Leaving so soon?
@@ -39,15 +40,17 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             }
         }
     }
-    // This is a shitty and completely ineffective place to put this and needs to be changed.    
 }
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 {
-    CheckIfTeamsRunningMacOS(out bool isTeamsRunning);
-
-    if (isTeamsRunning)
+    while (true)
     {
-        PreventSleepMacOS();
+        CheckIfTeamsRunningMacOS(out bool isTeamsRunning);
+
+        if (isTeamsRunning)
+        {
+            PreventSleepMacOS();
+        }
     }
 }
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -136,7 +139,7 @@ void ChangeStateToActive()
             "1.7.00.156" => ("combase.dll", 0x335B29),
             "1.6.00.35961" => ("textinputframework.dll", 0x13489D), // My guess is the combase one works for this version too...
             "1.6.00.29964" => ("combase.dll", 0x335B29),
-            "23320.3027.2591.1505" => ("RPCRT4.dll", 0x1021C4), // Try 0x1021D8 if that doesn't work.
+            "23320.3027.2591.1505" => ("RPCRT4.dll", 0x1021C4), // Try 0x1021D8 if that doesn't work... this isn't really needed at all.
             _ => (string.Empty, 0)
         };
 
@@ -146,52 +149,62 @@ void ChangeStateToActive()
             return;
         }
 
-        IntPtr processHandle = OpenProcess(PROCESS_WM_READ | PROCESS_WM_WRITE | PROCESS_VM_OPERATION, false, processID);
+        double versionNumberDouble;
+        double.TryParse(versionNumber, out versionNumberDouble);
 
-        // Get the base address of the DLL in the process's memory space.
-        IntPtr dllBaseAddress = GetModuleBaseAddress(processID, dllName);
-
-        if (dllBaseAddress == IntPtr.Zero)
+        if (versionNumberDouble > 23320)
         {
-            if (userMessage != $"Failed to find the base address of {dllName}.")
-            {
-                userMessage = $"Failed to find the base address of {dllName}.";
-                Console.WriteLine();
-            }
-            // Don't repeat the error message.
-            return;
-        }
-
-        // Calculate the address to write to by adding the offset to the base address.
-        IntPtr addressToWriteTo = IntPtr.Add(dllBaseAddress, offset);
-
-        byte valueToWrite = 1;
-
-        // Allocate a buffer with the value to write.
-        byte[] buffer = [valueToWrite];
-
-        // Write the value to the calculated address. Let us know what the result was.
-        bool result = WriteProcessMemory(processHandle, addressToWriteTo, buffer, buffer.Length, out int bytesWritten);
-
-        if (result && bytesWritten == buffer.Length)
-        {
-            if (userMessage == "Successfully disabling automatic inactivity!")
-            {
-                // Don't repeat the message.
-            }
-            else
-            {
-                userMessage = "Successfully disabling automatic inactivity!";
-                Console.WriteLine(userMessage);
-            }
-
-            // Time to actually enable no-sleep mode.
             _ = SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
         }
         else
         {
-            Console.WriteLine("Unable to change the offset value to 1. Do some debugging.");
-            return;
+            IntPtr processHandle = OpenProcess(PROCESS_WM_READ | PROCESS_WM_WRITE | PROCESS_VM_OPERATION, false, processID);
+
+            // Get the base address of the DLL in the process's memory space.
+            IntPtr dllBaseAddress = GetModuleBaseAddress(processID, dllName);
+
+            if (dllBaseAddress == IntPtr.Zero)
+            {
+                if (userMessage != $"Failed to find the base address of {dllName}.")
+                {
+                    userMessage = $"Failed to find the base address of {dllName}.";
+                    Console.WriteLine();
+                }
+                // Don't repeat the error message.
+                return;
+            }
+
+            // Calculate the address to write to by adding the offset to the base address.
+            IntPtr addressToWriteTo = IntPtr.Add(dllBaseAddress, offset);
+
+            byte valueToWrite = 1;
+
+            // Allocate a buffer with the value to write.
+            byte[] buffer = [valueToWrite];
+
+            // Write the value to the calculated address. Let us know what the result was.
+            bool result = WriteProcessMemory(processHandle, addressToWriteTo, buffer, buffer.Length, out int bytesWritten);
+
+            if (result && bytesWritten == buffer.Length)
+            {
+                if (userMessage == "Successfully disabling automatic inactivity!")
+                {
+                    // Don't repeat the message.
+                }
+                else
+                {
+                    userMessage = "Successfully disabling automatic inactivity!";
+                    Console.WriteLine(userMessage);
+                }
+
+                // Time to actually enable no-sleep mode.
+                _ = SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+            }
+            else
+            {
+                Console.WriteLine("Unable to disable Teams inactivity (couldn't change offset to 1.)");
+                return;
+            }
         }
     }
     catch (Exception ex)
@@ -369,7 +382,7 @@ void CheckIfTeamsRunningMacOS(out bool isTeamsRunning)
 void CurrentDomain_ProcessExit(object? sender, EventArgs e)
 {
     Console.WriteLine("Program is exiting. Please wait.");
-    
+
     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
     {
         _ = SetThreadExecutionState(ES_CONTINUOUS);
