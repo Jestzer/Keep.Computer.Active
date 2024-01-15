@@ -2,18 +2,18 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
+// Leaving so soon?
+AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+
 Console.WriteLine("Releasing the chickens...");
 
 string userMessage = string.Empty;
 string versionNumber = string.Empty;
 int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
 bool isUsingNewTeams = false;
+Process caffeinateProcess;
 
-// macOS stuff.
-IntPtr assertionType;
-IntPtr assertionName;
-
-// Needed to keep the computer from going to sleep.
+// Needed to keep the computer from going to sleep on Windows.
 const uint ES_CONTINUOUS = 0x80000000;
 const uint ES_SYSTEM_REQUIRED = 0x00000001;
 
@@ -38,28 +38,21 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             }
         }
     }
-    // This is a shitty and completely ineffective place to put this and needs to be changed.
-    SetThreadExecutionState(ES_CONTINUOUS);
+    // This is a shitty and completely ineffective place to put this and needs to be changed.    
+}
+else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+{
+    CheckIfTeamsRunningMacOS(out bool isTeamsRunning);
+
+    if (isTeamsRunning)
+    {
+        PreventSleepMacOS();
+    }
 }
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 {
     Console.WriteLine("This application does not support Linux because there is no longer an official Teams application for Linux.");
     Environment.Exit(1);
-}
-else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-{
-    while (true)
-    {
-        CheckIfTeamsRunningMacOS(out bool isTeamsRunning);
-        if (isTeamsRunning)
-        {
-            PreventSleepMacOS();
-        }
-    }
-
-    // Yes I know this unreachable at the moment THANK YOU.
-    Marshal.FreeHGlobal(assertionType);
-    Marshal.FreeHGlobal(assertionName);
 }
 else
 {
@@ -315,38 +308,18 @@ void PreventSleepMacOS()
 {
     try
     {
-        // Define the necessary I/O Kit constants and structs
-        const string IOPMAssertionTypeNoIdleSleep = "NoIdleSleepAssertion";
-        const uint kIOPMAssertionLevelOn = 255;
+        // Start the caffeinate process to prevent the system from sleeping.
+        using Process caffeinateProcess = new Process();
+        caffeinateProcess.StartInfo.FileName = "/usr/bin/caffeinate";
+        caffeinateProcess.StartInfo.Arguments = "-di"; // Prevent the display from sleeping and keep the system awake indefinitely.
+        caffeinateProcess.StartInfo.UseShellExecute = false;
+        caffeinateProcess.Start();
 
-        // Define the IOPMAssertionCreateWithName function signature
-        [DllImport("/System/Library/Frameworks/IOKit.framework/IOKit")]
-        static extern int IOPMAssertionCreateWithName(
-            IntPtr assertionType,
-            uint assertionLevel,
-            IntPtr assertionName,
-            out uint assertionID);
+        Console.WriteLine("System sleep prevented. Press Enter to allow sleep and exit the program.");
+        Console.ReadLine();
 
-        uint assertionID;
-        IntPtr assertionType = Marshal.StringToHGlobalAnsi(IOPMAssertionTypeNoIdleSleep);
-        IntPtr assertionName = Marshal.StringToHGlobalAnsi("MyApp Prevent Sleep");
-
-        // Create the power assertion to prevent idle sleep
-        int result = IOPMAssertionCreateWithName(
-            assertionType,
-            kIOPMAssertionLevelOn,
-            assertionName,
-            out assertionID);
-
-        if (result == 0)
-        {
-            Console.WriteLine("Sleep prevention activated. Assertion ID: " + assertionID);
-            // Keep the application running or perform work here
-        }
-        else
-        {
-            Console.WriteLine("Failed to prevent sleep. Error code: " + result);
-        }
+        // When the user presses Enter, stop the caffeinate process to allow the system to sleep again.
+        caffeinateProcess.Kill();
     }
     catch (Exception ex)
     {
@@ -379,12 +352,22 @@ void CheckIfTeamsRunningMacOS(out bool isTeamsRunning)
 
     if (!isTeamsRunning)
     {
-        // Teams is not running
-        Console.WriteLine("Teams is not running.");
+        if (userMessage != "Teams is not running.")
+        {
+            userMessage = "Teams is not running.";
+            Console.WriteLine(userMessage);
+        }
+        // Don't repeat the same error message.        
     }
     else
     {
-        // Teams is running
         Console.WriteLine("Teams is running.");
     }
+}
+
+void CurrentDomain_ProcessExit(object sender, EventArgs e)
+{
+    Console.WriteLine("Program is exiting. Please wait.");
+    _ = SetThreadExecutionState(ES_CONTINUOUS);
+    caffeinateProcess?.Kill();
 }
