@@ -311,37 +311,44 @@ void CheckIfTeamsIsRunning(out bool isTeamsRunning)
 
 void PreventSleepMacOS()
 {
-    // Define the necessary I/O Kit constants and structs
-    const string IOPMAssertionTypeNoIdleSleep = "NoIdleSleepAssertion";
-    const uint kIOPMAssertionLevelOn = 255;
-
-    // Define the IOPMAssertionCreateWithName function signature
-    [DllImport("/System/Library/Frameworks/IOKit.framework/IOKit")]
-    static extern int IOPMAssertionCreateWithName(
-        IntPtr assertionType,
-        uint assertionLevel,
-        IntPtr assertionName,
-        out uint assertionID);
-
-    uint assertionID;
-    IntPtr assertionType = Marshal.StringToHGlobalAnsi(IOPMAssertionTypeNoIdleSleep);
-    IntPtr assertionName = Marshal.StringToHGlobalAnsi("MyApp Prevent Sleep");
-
-    // Create the power assertion to prevent idle sleep
-    int result = IOPMAssertionCreateWithName(
-        assertionType,
-        kIOPMAssertionLevelOn,
-        assertionName,
-        out assertionID);
-
-    if (result == 0)
+    try
     {
-        Console.WriteLine("Sleep prevention activated. Assertion ID: " + assertionID);
-        // Keep the application running or perform work here
+        // Define the necessary I/O Kit constants and structs
+        const string IOPMAssertionTypeNoIdleSleep = "NoIdleSleepAssertion";
+        const uint kIOPMAssertionLevelOn = 255;
+
+        // Define the IOPMAssertionCreateWithName function signature
+        [DllImport("/System/Library/Frameworks/IOKit.framework/IOKit")]
+        static extern int IOPMAssertionCreateWithName(
+            IntPtr assertionType,
+            uint assertionLevel,
+            IntPtr assertionName,
+            out uint assertionID);
+
+        uint assertionID;
+        IntPtr assertionType = Marshal.StringToHGlobalAnsi(IOPMAssertionTypeNoIdleSleep);
+        IntPtr assertionName = Marshal.StringToHGlobalAnsi("MyApp Prevent Sleep");
+
+        // Create the power assertion to prevent idle sleep
+        int result = IOPMAssertionCreateWithName(
+            assertionType,
+            kIOPMAssertionLevelOn,
+            assertionName,
+            out assertionID);
+
+        if (result == 0)
+        {
+            Console.WriteLine("Sleep prevention activated. Assertion ID: " + assertionID);
+            // Keep the application running or perform work here
+        }
+        else
+        {
+            Console.WriteLine("Failed to prevent sleep. Error code: " + result);
+        }
     }
-    else
+    catch (ex Exception)
     {
-        Console.WriteLine("Failed to prevent sleep. Error code: " + result);
+        Console.WriteLine(ex.Message);
     }
 }
 
