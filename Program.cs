@@ -347,5 +347,35 @@ void PreventSleepMacOS()
 
 void CheckIfTeamsRunningMacOS(out bool isTeamsRunning)
 {
-    isTeamsRunning = false;
+    // Use 'pgrep' to find Teams process by name
+    ProcessStartInfo startInfo = new ProcessStartInfo
+    {
+        FileName = "/bin/bash",
+        Arguments = "-c \"pgrep -l 'Teams'\"", // The '-l' flag lists the process names
+        UseShellExecute = false,
+        RedirectStandardOutput = true,
+        CreateNoWindow = true
+    };
+
+    using (Process process = Process.Start(startInfo))
+    {
+        using (StreamReader reader = process.StandardOutput)
+        {
+            string result = reader.ReadToEnd();
+
+            // Check if the output contains the name of the Teams process
+            isTeamsRunning = result.Contains("Teams");
+        }
+    }
+
+    if (!isTeamsRunning)
+    {
+        // Teams is not running
+        Console.WriteLine("Teams is not running.");
+    }
+    else
+    {
+        // Teams is running
+        Console.WriteLine("Teams is running.");
+    }
 }
