@@ -2,6 +2,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
+Process? caffeinateProcess = null;
+
 // Leaving so soon?
 AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
 
@@ -11,7 +13,6 @@ string userMessage = string.Empty;
 string versionNumber = string.Empty;
 int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
 bool isUsingNewTeams = false;
-Process caffeinateProcess;
 
 // Needed to keep the computer from going to sleep on Windows.
 const uint ES_CONTINUOUS = 0x80000000;
@@ -365,9 +366,20 @@ void CheckIfTeamsRunningMacOS(out bool isTeamsRunning)
     }
 }
 
-void CurrentDomain_ProcessExit(object sender, EventArgs e)
+void CurrentDomain_ProcessExit(object? sender, EventArgs e)
 {
     Console.WriteLine("Program is exiting. Please wait.");
-    _ = SetThreadExecutionState(ES_CONTINUOUS);
-    caffeinateProcess?.Kill();
+    
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    {
+        _ = SetThreadExecutionState(ES_CONTINUOUS);
+    }
+    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+    {
+        caffeinateProcess?.Kill();
+    }
+    else
+    {
+        Console.WriteLine("How did you end up here?");
+    }
 }
