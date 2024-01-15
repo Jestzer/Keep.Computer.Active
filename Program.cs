@@ -4,27 +4,6 @@ using System.Text;
 
 Console.WriteLine("Releasing the chickens...");
 
-if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-{
-    // Proceed.
-}
-else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-{
-    Console.WriteLine("This application does not support Linux because there is no longer an official Teams application for Linux.");
-    Environment.Exit(1);
-}
-else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-{
-    Console.WriteLine("macOS.");
-    //Environment.Exit(1);
-
-}
-else
-{
-    Console.WriteLine("Running on an unknown platform. Exiting.");
-    Environment.Exit(1);
-}
-
 string userMessage = string.Empty;
 string versionNumber = string.Empty;
 int processID = GetProcessIdByName("Teams", " | Microsoft Teams classic");
@@ -38,12 +17,12 @@ IntPtr assertionName;
 const uint ES_CONTINUOUS = 0x80000000;
 const uint ES_SYSTEM_REQUIRED = 0x00000001;
 
-while (true)
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 {
-    CheckIfTeamsIsRunning(out bool isTeamsRunning);
-    if (isTeamsRunning)
+    while (true)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        CheckIfTeamsIsRunning(out bool isTeamsRunning);
+        if (isTeamsRunning)
         {
             CheckTeamsVersion(out string acceptedVersion, out versionNumber);
 
@@ -58,21 +37,32 @@ while (true)
                 await Task.Delay(2000);
             }
         }
-        else
+    }
+    SetThreadExecutionState(ES_CONTINUOUS);
+}
+else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+{
+    Console.WriteLine("This application does not support Linux because there is no longer an official Teams application for Linux.");
+    Environment.Exit(1);
+}
+else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+{
+    while (true)
+    {
+        CheckIfTeamsRunningMacOS(out bool isTeamsRunning);
+        if (isTeamsRunning)
         {
-            while (true)
-            {
-                PreventSleepMacOS();
-            }
+            PreventSleepMacOS();
         }
     }
-}
-SetThreadExecutionState(ES_CONTINUOUS);
 
-if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-{
     Marshal.FreeHGlobal(assertionType);
     Marshal.FreeHGlobal(assertionName);
+}
+else
+{
+    Console.WriteLine("Running on an unknown platform. Exiting.");
+    Environment.Exit(1);
 }
 
 [DllImport("kernel32.dll")]
@@ -353,4 +343,9 @@ void PreventSleepMacOS()
     {
         Console.WriteLine("Failed to prevent sleep. Error code: " + result);
     }
+}
+
+void CheckIfTeamsRunningMacOS(out bool isTeamsRunning)
+{
+    isTeamsRunning = false;
 }
