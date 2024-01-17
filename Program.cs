@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-// For macOS.
+// For macOS. This needs to come before the EventHandler below.
 Process? caffeinateProcess = null;
 
 // Leaving so soon?
@@ -99,7 +99,6 @@ static int GetProcessIdByName(string processName, string windowTitleContains)
             return proc.Id;
         }
     }
-    // No process found with the specified name and window title criteria.
     return -1;
 }
 
@@ -139,7 +138,6 @@ void ChangeStateToActive()
             "1.7.00.156" => ("combase.dll", 0x335B29),
             "1.6.00.35961" => ("textinputframework.dll", 0x13489D), // My guess is the combase one works for this version too...
             "1.6.00.29964" => ("combase.dll", 0x335B29),
-            "23320.3027.2591.1505" => ("RPCRT4.dll", 0x1021C4), // Try 0x1021D8 if that doesn't work... this isn't really needed at all.
             _ => (string.Empty, 0)
         };
 
