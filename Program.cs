@@ -45,7 +45,7 @@ else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 {
     while (true)
     {
-        CheckIfTeamsRunningMacOS(out bool isTeamsRunning);
+        CheckIfTeamsIsRunningMacOS(out bool isTeamsRunning);
 
         if (isTeamsRunning)
         {
@@ -60,7 +60,7 @@ else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 }
 else
 {
-    Console.WriteLine("Running on an unknown platform. Exiting.");
+    Console.WriteLine("Running on an unsupported or unknown platform. Exiting.");
     Environment.Exit(1);
 }
 
@@ -150,9 +150,18 @@ void ChangeStateToActive()
         double versionNumberDouble;
         double.TryParse(versionNumber, out versionNumberDouble);
 
-        if (versionNumberDouble > 23320)
+        if (isUsingNewTeams)
         {
             _ = SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+            if (userMessage == "Successfully disabling automatic inactivity!")
+            {
+                // Don't repeat the message.
+            }
+            else
+            {
+                userMessage = "Successfully disabling automatic inactivity!";
+                Console.WriteLine(userMessage);
+            }
         }
         else
         {
@@ -339,13 +348,13 @@ void PreventSleepMacOS()
     }
 }
 
-void CheckIfTeamsRunningMacOS(out bool isTeamsRunning)
+void CheckIfTeamsIsRunningMacOS(out bool isTeamsRunning)
 {
-    // Use 'pgrep' to find Teams process by name
+    // Use 'pgrep' to find Teams process by name.
     ProcessStartInfo startInfo = new ProcessStartInfo
     {
         FileName = "/bin/bash",
-        Arguments = "-c \"pgrep -l 'Teams'\"", // The '-l' flag lists the process names
+        Arguments = "-c \"pgrep -l 'Teams'\"",
         UseShellExecute = false,
         RedirectStandardOutput = true,
         CreateNoWindow = true
@@ -357,7 +366,8 @@ void CheckIfTeamsRunningMacOS(out bool isTeamsRunning)
         {
             string result = reader.ReadToEnd();
 
-            // Check if the output contains the name of the Teams process
+            // Check if the output contains the name of the Teams process.
+            // I need to # add some code that discriminates old Teams.
             isTeamsRunning = result.Contains("Teams");
         }
     }
