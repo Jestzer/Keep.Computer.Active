@@ -1,0 +1,32 @@
+("textinputframework.dll", 0x13489D)
+ActXPrxy.dll+71690
+combase.dll+3358B9
+combase.dll+335DA8
+combase.dll+337B4B
+combase.dll+337B4D
+combase.dll+337B68
+CoreMessaging.dll+113138
+d2d1.dll+5A27F0
+dcomp.dll+219E00
+EmbeddedBrowserWebView.dll+60EDA3
+EmbeddedBrowserWebView.dll+60FD18 (128)
+EmbeddedBrowserWebView.dll+60FD28 (5)
+EmbeddedBrowserWebView.dll+60FDC0 (5)
+EmbeddedBrowserWebView.dll+60FDAB
+EmbeddedBrowserWebView.dll+60FE0B
+EmbeddedBrowserWebView.dll+60FE13
+EmbeddedBrowserWebView.dll+61AE70 (++)
+gdi32full.dll+F99E0 (18)
+igc64.dll+2B9FC48
+igd10um64xe.DLL+1852DB8
+KERNEL32.DLL+B9AF8
+ntdll.RtlpFreezeTimeBias+18 ("ntdll.dll", 0x187128)
+RPCRT4.dll+101FD0
+RPCRT4.dll+1021C4 (1 and 3)
+RPCRT4.dll+1021D8 (1 and 3 )
+RtmCodecs.dll+779B30
+RtmCodecs.dll+7ACAFD
+RtmPltfm.dll+11418F5
+RTWorkQ.DLL+21890
+shcore.dll+E00A8
+shcore.dll+E0389
