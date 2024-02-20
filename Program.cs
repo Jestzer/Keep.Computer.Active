@@ -86,6 +86,8 @@ const int PROCESS_WM_READ = 0x0010;
 const int PROCESS_WM_WRITE = 0x0020;
 const int PROCESS_VM_OPERATION = 0x0008;
 
+byte valueToWrite = 18;
+
 static int GetProcessIdByName(string processName, string windowTitleContains)
 {
     // Get all processes with the specified name.
@@ -138,6 +140,7 @@ void ChangeStateToActive()
             "1.7.00.156" => ("combase.dll", 0x335B29),
             "1.6.00.35961" => ("textinputframework.dll", 0x13489D), // My guess is the combase one works for this version too...
             "1.6.00.29964" => ("combase.dll", 0x335B29),
+            "24004.1307.2669.7070" => ("RPCRT4.dll", 0x1021C4), // Needs to be tested, but seems to actually work!
             _ => (string.Empty, 0)
         };
 
@@ -147,12 +150,11 @@ void ChangeStateToActive()
             return;
         }
 
-        double versionNumberDouble;
-        double.TryParse(versionNumber, out versionNumberDouble);
+        _ = double.TryParse(versionNumber, out double versionNumberDouble);
 
-        if (isUsingNewTeams)
+        if (versionNumber == "23320.3027.2591.1505")
         {
-            _ = SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+            _ = SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED); // We only need to prevent the computer from sleeping in this version.
             if (userMessage == "Successfully disabling automatic inactivity!")
             {
                 // Don't repeat the message.
@@ -175,7 +177,7 @@ void ChangeStateToActive()
                 if (userMessage != $"Failed to find the base address of {dllName}.")
                 {
                     userMessage = $"Failed to find the base address of {dllName}.";
-                    Console.WriteLine();
+                    Console.WriteLine(userMessage);
                 }
                 // Don't repeat the error message.
                 return;
@@ -184,7 +186,14 @@ void ChangeStateToActive()
             // Calculate the address to write to by adding the offset to the base address.
             IntPtr addressToWriteTo = IntPtr.Add(dllBaseAddress, offset);
 
-            byte valueToWrite = 1;
+            if (versionNumber == "24004.1307.2669.7070")
+            {
+                valueToWrite = 3;
+            }
+            else
+            {
+                valueToWrite = 1;
+            }
 
             // Allocate a buffer with the value to write.
             byte[] buffer = [valueToWrite];
@@ -253,8 +262,8 @@ void CheckTeamsVersion(out string acceptedVersion, out string versionNumber)
         }
 
         // Check through the different supported versions of Teams.
-        string[] versions = ["1.6.00.35961", "1.6.00.29964", "1.7.00.156", "23320.3027.2591.1505"];
-        int[] offsets = [0x89AECE9, 0x89AFCE9, 0x89B0CE9, 0x6813C5];
+        string[] versions = ["1.6.00.35961", "1.6.00.29964", "1.7.00.156", "23320.3027.2591.1505", "24004.1307.2669.7070"];
+        int[] offsets = [0x89AECE9, 0x89AFCE9, 0x89B0CE9, 0x6813C5, 0x604435];
 
         for (int i = 0; i < versions.Length; i++)
         {
