@@ -2,6 +2,7 @@
 ActXPrxy.dll+71690
 combase.dll+3358B9
 combase.dll+335DA8
+combase.dll+3378E8
 combase.dll+337B4B
 combase.dll+337B4D
 combase.dll+337B68
@@ -21,6 +22,7 @@ igc64.dll+2B9FC48
 igd10um64xe.DLL+1852DB8
 KERNEL32.DLL+B9AF8
 ntdll.RtlpFreezeTimeBias+18 ("ntdll.dll", 0x187128)
+
 RPCRT4.dll+101FD0
 RPCRT4.dll+1021C4 (1 and 3)
 RPCRT4.dll+1021D8 (1 and 3 )
@@ -28,5 +30,7 @@ RtmCodecs.dll+779B30
 RtmCodecs.dll+7ACAFD
 RtmPltfm.dll+11418F5
 RTWorkQ.DLL+21890
+shcore.dll+E00D8
 shcore.dll+E00A8
 shcore.dll+E0389
+WININET.dll+4B3170
