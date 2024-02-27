@@ -140,7 +140,7 @@ void ChangeStateToActive()
             "1.7.00.156" => ("combase.dll", 0x335B29),
             "1.6.00.35961" => ("textinputframework.dll", 0x13489D), // My guess is the combase one works for this version too...
             "1.6.00.29964" => ("combase.dll", 0x335B29),
-            "24004.1307.2669.7070" => ("RPCRT4.dll", 0x1021C4), // Needs to be tested, but seems to actually work!
+            "24004.1307.2669.7070" => ("shcore.dll", 0xE00D8),
             _ => (string.Empty, 0)
         };
 
@@ -188,7 +188,7 @@ void ChangeStateToActive()
 
             if (versionNumber == "24004.1307.2669.7070")
             {
-                valueToWrite = 3;
+                valueToWrite = 1;
             }
             else
             {
@@ -263,7 +263,7 @@ void CheckTeamsVersion(out string acceptedVersion, out string versionNumber)
 
         // Check through the different supported versions of Teams.
         string[] versions = ["1.6.00.35961", "1.6.00.29964", "1.7.00.156", "23320.3027.2591.1505", "24004.1307.2669.7070"];
-        int[] offsets = [0x89AECE9, 0x89AFCE9, 0x89B0CE9, 0x6813C5, 0x604435];
+        int[] offsets = [0x89AECE9, 0x89AFCE9, 0x89B0CE9, 0x6813C5, 0x4C7265];
 
         for (int i = 0; i < versions.Length; i++)
         {
