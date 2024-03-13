@@ -140,7 +140,7 @@ void ChangeStateToActive()
             "1.7.00.156" => ("combase.dll", 0x335B29),
             "1.6.00.35961" => ("textinputframework.dll", 0x13489D), // My guess is the combase one works for this version too...
             "1.6.00.29964" => ("combase.dll", 0x335B29),
-            "24033.811.2738.2546" => ("skypert.dll", 0x4A12E1),
+            "24033.811.2738.2546" => ("EmbeddedBrowserWebView.dll", 0x4D7863),
             _ => (string.Empty, 0)
         };
 
