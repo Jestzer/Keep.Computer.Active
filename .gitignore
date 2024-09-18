@@ -1,4 +1,4 @@
-.vs/
-.vscode/
-bin/
-obj/
+*.exe
+*.zip
+Keep-Teams-Active
+Keep-Teams-Active.exe
