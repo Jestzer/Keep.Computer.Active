@@ -9,11 +9,9 @@ import (
 
 func main() {
 	for {
-		// Simulate Scroll Lock key press twice (to ensure as little interference as possible!)
-		robotgo.KeyTap("scrolllock")
-		robotgo.KeyTap("scrolllock")
+		robotgo.KeyTap("f13")
 
-		// Let the user know.
+		// Let the user know the key press was successful.
 		fmt.Println("Continuing to keep Teams active. See you in 3 minutes!")
 
 		// Wait for 3 minutes.
