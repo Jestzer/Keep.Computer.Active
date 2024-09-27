@@ -1,4 +1,4 @@
-module github.com/Jestzer/Keep.Teams.Active
+module github.com/Jestzer/Keep.Computer.Active
 
 go 1.22.6
 
