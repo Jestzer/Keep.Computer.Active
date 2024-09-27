@@ -30,7 +30,7 @@ func main() {
 		}
 
 		// Let the user know the key press was successful.
-		fmt.Println("Continuing to keep Teams active. See you in 3 minutes!")
+		fmt.Println("Continuing to keep computer active. See you in 3 minutes!")
 
 		// Wait for 3 minutes.
 		time.Sleep(3 * time.Minute)
