@@ -15,7 +15,7 @@ func main() {
 	args := os.Args[1:]
 	for _, arg := range args {
 		if arg == "-version" {
-			fmt.Println("Version number: 1.1")
+			fmt.Println("Version number: 1.2")
 			os.Exit(0)
 		}
 	}
@@ -30,7 +30,7 @@ func main() {
 		}
 
 		// Let the user know the key press was successful.
-		fmt.Println("Continuing to keep computer active. See you in 3 minutes!")
+		fmt.Println("Continuing to keep computer active. See you in 3 minutes! Current time is", time.Hour, time.Minute, time.Second, ".")
 
 		// Wait for 3 minutes.
 		time.Sleep(3 * time.Minute)
