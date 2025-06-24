@@ -31,7 +31,7 @@ func main() {
 
 		// I'm sorry, what kind of non-sensical bullshit is way of outputting time? This is absolutely insane.
 		// Why would putting in a random time make more sense than writing HH:MM:SS AM/PM??
-		fmt.Println("Continuing to keep computer active. See you in 3 minutes! Current time is", time.Now().Local().Format("15:04:05 PM."))
+		fmt.Println("Continuing to keep computer active. See you in 3 minutes! Current time is", time.Now().Local().Format("03:04:05 PM."))
 
 		// Wait for 3 minutes.
 		time.Sleep(3 * time.Minute)
